@@ -275,7 +275,7 @@ use core::str as core_str;
 // use error as std_error;
 use fmt;
 use result;
-use str;
+// use str;
 // use memchr;
 use ptr;
 
@@ -2047,7 +2047,7 @@ impl<R: Read> Iterator for Chars<R> {
                 }
             }
         }
-        Some(match str::from_utf8(&buf[..width]).ok() {
+        Some(match core_str::from_utf8(&buf[..width]).ok() {
             Some(s) => Ok(s.chars().next().unwrap()),
             None => Err(CharsError::NotUtf8),
         })
