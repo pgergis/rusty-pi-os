@@ -8,8 +8,8 @@
 #![feature(ptr_internals)]
 #![feature(panic_implementation)]
 
-extern crate core;
 #[macro_use]
+extern crate core;
 extern crate pi;
 extern crate stack_vec;
 
