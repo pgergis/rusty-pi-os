@@ -13,11 +13,6 @@ extern crate core;
 extern crate pi;
 extern crate stack_vec;
 
-// use pi::gpio::Gpio;
-// use pi::timer;
-use pi::uart::MiniUart;
-use std::fmt::Write;
-
 pub mod lang_items;
 pub mod mutex;
 pub mod console;
@@ -26,13 +21,15 @@ pub mod shell;
 #[no_mangle]
 pub extern "C" fn kmain() {
     // FIXME: Start the shell.
+    // use console::{kprintln, CONSOLE};
 
-    let mut myuart = MiniUart::new();
-    loop {
-        let b = myuart.read_byte();
-        myuart.write_byte(b);
-        myuart.write_str("<-");
-    }
+    // loop {
+    //     let b = CONSOLE.lock().read_byte();
+    //     kprintln!("{}", b);
+    //     kprintln!("<-");
+    // }
+
+    shell::shell("> ");
 
 }
 

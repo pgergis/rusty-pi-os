@@ -1,5 +1,7 @@
-#![feature(asm, lang_items)]
+#![feature(asm, lang_items, panic_implementation)]
 
+#[macro_use]
+extern crate core;
 extern crate xmodem;
 extern crate pi;
 
@@ -9,7 +11,7 @@ pub mod lang_items;
 const BINARY_START_ADDR: usize = 0x80000;
 const BOOTLOADER_START_ADDR: usize = 0x4000000;
 
-/// Pointer to where the loaded binary expects to be laoded.
+/// Pointer to where the loaded binary expects to be loaded.
 const BINARY_START: *mut u8 = BINARY_START_ADDR as *mut u8;
 
 /// Free space between the bootloader and the loaded binary's start address.
@@ -25,5 +27,22 @@ fn jump_to(addr: *mut u8) -> ! {
 
 #[no_mangle]
 pub extern "C" fn kmain() {
+    use std::fmt::Write;
+
     // FIXME: Implement the bootloader.
+    let mut uart = pi::uart::MiniUart::new();
+    uart.set_read_timeout(750);
+    loop {
+        let kernel_binary;
+        unsafe {
+            kernel_binary = core::slice::from_raw_parts_mut(BINARY_START, MAX_BINARY_SIZE);
+        }
+        match xmodem::Xmodem::receive(&mut uart, kernel_binary) {
+            Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {},
+            Err(_) => {uart.write_str("Unexpected error; retrying").expect("unexpected");},
+            Ok(_) => break
+        }
+    }
+
+    jump_to(BINARY_START);
 }
