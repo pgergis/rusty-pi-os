@@ -59,7 +59,7 @@ fn cmd_echo(command: &Command) {
     echo_phrases.next(); // throw away path
 
     for phrase in echo_phrases {
-        kprint!("{}", phrase);
+        kprint!("{} ", phrase);
     }
 
     kprintln!();
