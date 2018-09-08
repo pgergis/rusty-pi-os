@@ -13,19 +13,19 @@ struct Command<'a> {
     args: StackVec<'a, &'a str>
 }
 
-// struct fn_desc {
-//     func: for <'r> fn(Command<'r>),
-//     cmd: &'static str,
-// }
+struct FnDesc {
+    func: for <'r> fn(&Command<'r>),
+    cmd: &'static str,
+}
 
-// static BUILTINS: &'static [fn_desc] = &{
-//     [
-//         fn_desc {
-//             func: cmd_echo,
-//             cmd: "echo"
-//         }
-//     ]
-// };
+static BUILTINS: &'static [FnDesc] = &{
+    [
+        FnDesc {
+            func: cmd_echo,
+            cmd: "echo"
+        }
+    ]
+};
 
 impl<'a> Command<'a> {
     /// Parse a command from a string `s` using `buf` as storage for the
@@ -54,32 +54,39 @@ impl<'a> Command<'a> {
     }
 }
 
-// fn cmd_echo(command: Command) {
-//     kprintln!("{}", command.args);
-// }
+fn cmd_echo(command: &Command) {
+    let mut echo_phrases = command.args.iter();
+    echo_phrases.next(); // throw away path
 
-// fn func_lookup(path: str) -> Result<fn(),()> {
-//     for f in BUILTINS {
-//         if path == f.cmd {
-//             return f.func;
-//         }
-//     }
-//     Err()
-// }
+    for phrase in echo_phrases {
+        kprint!("{}", phrase);
+    }
 
-// fn ext_exec(path: str) -> Result<fn(),()> {
-//     kprintln!("unknown command: ${}", path);
-//     Ok()
-// }
+    kprintln!();
+}
 
-// fn exec(command: Command) {
-//     let path = command.path();
+fn func_lookup(path: &str) -> Result<for <'r> fn(&Command<'r>),()> {
+    for f in BUILTINS {
+        if path == f.cmd {
+            return Ok(f.func);
+        }
+    }
+    Err(())
+}
 
-//     match func_lookup {
-//         Err(_) => { ext_exec(); },
-//         Ok(builtin_func) => { builtin_func; }
-//     }
-// }
+fn ext_exec(path: &str) -> Result<(),()> {
+    kprintln!("unknown command: ${}", path);
+    Ok(())
+}
+
+fn exec(command: &Command) {
+    let path = command.path();
+
+    match func_lookup(path) {
+        Err(_) => { ext_exec(path).expect("Failed external program execute"); },
+        Ok(builtin_func) => { builtin_func(command); }
+    };
+}
 
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
@@ -93,9 +100,12 @@ pub fn shell(prefix: &str) -> ! {
         loop {
             if b_in == b'\r' || b_in == b'\n' { break; }
             if b_in == 8 || b_in == 127 {
-                CONSOLE.lock().write_byte(8);
-                CONSOLE.lock().write_byte(b' ');
-                CONSOLE.lock().write_byte(8);
+                if !str_vec.is_empty(){
+                    str_vec.pop().expect("Invalid backspace");
+                    CONSOLE.lock().write_byte(8);
+                    CONSOLE.lock().write_byte(b' ');
+                    CONSOLE.lock().write_byte(8);
+                }
             } else {
                 kprint!("{}", b_in as char);
                 str_vec.push(b_in).expect("Buffer overflow!");
@@ -111,9 +121,10 @@ pub fn shell(prefix: &str) -> ! {
         kprintln!();
         match command {
             Err(_) => {kprintln!("Parse Error!!"); continue; },
-            Ok(_) =>  kprintln!("path: {}", command = command.unwrap().path())
+            Ok(unwrapped_cmd) =>  {
+                kprintln!("path: {}", unwrapped_cmd.path());
+                exec(&unwrapped_cmd); }
         }
 
-        // exec(command);
     }
 }

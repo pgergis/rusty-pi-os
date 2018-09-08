@@ -21,16 +21,8 @@ pub mod shell;
 #[no_mangle]
 pub extern "C" fn kmain() {
     // FIXME: Start the shell.
-    // use console::{kprintln, CONSOLE};
-
-    // loop {
-    //     let b = CONSOLE.lock().read_byte();
-    //     kprintln!("{}", b);
-    //     kprintln!("<-");
-    // }
 
     shell::shell("> ");
-
 }
 
 // #[no_mangle]
